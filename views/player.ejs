@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title><%= title %></title>
+    <script src="https://ssl.p.jwpcdn.com/player/v/8.18.2/jwplayer.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        height: 100vh;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="player"></div>
+    <script>
+      let player = jwplayer("player");
+      player.key = "W7zSm81+mmIsg7F+fyHRKhF3ggLkTqtGMhvI92kbqf/ysE99";
+      player.width = "100%";
+      player.height = "100%";
+      player.preload = "auto";
+      player.primary = "html5";
+      player.hlshtml = "true";
+      player.controls = "true";
+      //player.image = "http://content.jwplatform.com/thumbs/xJ7Wcodt-720.jpg";
+     /* player.tracks = [
+        {"file":"http://cdn.jwplayer.com/strips/GQlE6Rqd-120.vtt","kind":"thumbnails"},
+        {"file":"http://cdn.jwplayer.com/tracks/bhQKuTP5.vtt","kind":"captions","label":"th"}
+      ];*/
+      player.sources = <%- JSON.stringify(sources) %>;
+
+      player.setup(player);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,27 @@
+{
+  "name": "s_player",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon server.js",
+    "pm2": "pm2 start cluster.js --name=s_player"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "ejs": "^3.1.8",
+    "express": "^4.18.2",
+    "fs-extra": "^11.1.0",
+    "mysql2": "^3.1.0",
+    "query-string": "^7.1.1",
+    "request-promise": "^4.2.6",
+    "sequelize": "^6.28.0"
+  }
+}
