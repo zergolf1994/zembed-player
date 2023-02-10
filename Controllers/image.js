@@ -66,7 +66,7 @@ module.exports = async (req, res) => {
       quality = storage?.quality;
     }
 
-    console.log(sv_ip, quality);
+    //console.log(sv_ip, quality);
 
     const url = `http://${sv_ip}:8889/thumb/${slug}/file_${quality}.mp4/thumb-${
       sec * 1000
