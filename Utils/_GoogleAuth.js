@@ -92,7 +92,7 @@ exports.Rand = async ({ userId }) => {
 
     return token;
   } catch (error) {
-    console.error(error);
+    //console.error(error);
     return;
   }
 };
@@ -104,7 +104,6 @@ exports.Source = async (file) => {
     const data = {};
     const url = `https://docs.google.com/get_video_info?docid=${file?.source}`;
     let headers = {};
-
     let token = await this.Rand({ userId: file?.uid });
 
     if (token) {
@@ -156,7 +155,6 @@ exports.Source = async (file) => {
             } else {
               data.error_code = parsed.errorcode;
               data.error_text = parsed.reason;
-              //console.log(parsed)
             }
           } else {
             data.status = false;

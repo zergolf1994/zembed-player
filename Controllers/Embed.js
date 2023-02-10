@@ -8,7 +8,10 @@ module.exports = async (req, res) => {
   try {
     let { slug } = req.params;
     let { json } = req.query;
-    if (!slug) return res.status(404).end();
+    if (!slug) {
+      // error no slug
+      return res.status(404).end();
+    }
     let host = req.get("host");
     let where = {
       slug,
@@ -18,7 +21,7 @@ module.exports = async (req, res) => {
     };
 
     let row = await Files.Lists.findOne({
-      attributes: ["id", "title", "type", "source", "duration"],
+      attributes: ["id", "uid", "title", "type", "source", "duration"],
       where,
       include: [
         {
@@ -55,36 +58,59 @@ module.exports = async (req, res) => {
         });
     } else if (!row.videos.length && row.type == "gdrive") {
       let ProxyVideo = await Proxy.Cache(row);
-
       switch (ProxyVideo) {
-        case "time_over":
+        case "time_over" && "not_cache":
+          console.log("ProxyVideo", ProxyVideo);
           ProxyVideo = await Proxy.Google(row);
-          break;
-        case "not_cache":
-          ProxyVideo = await Proxy.Google(row);
+
+          if (ProxyVideo?.status == "ok") {
+            delete ProxyVideo.status;
+            delete ProxyVideo.title;
+            let bulkProxy = [],
+              source = [];
+            for (const key in ProxyVideo) {
+              if (ProxyVideo.hasOwnProperty.call(ProxyVideo, key)) {
+                const element = ProxyVideo[key];
+                bulkProxy.push({
+                  name: key,
+                  value: ProxyVideo[key],
+                  fileId: row?.id,
+                });
+              }
+            }
+            if (bulkProxy.length) {
+              let blukCreate = await ProxyCache.bulkCreate(bulkProxy);
+              data.sources = blukCreate
+                .map((e) => {
+                  if (["360", "480", "720", "1080"].includes(e?.name))
+                    return {
+                      file: `//proxy.zembed.xyz/proxy/${e?.id}.mp4`,
+                      label: `${e?.name}p`,
+                      type: `video/mp4`,
+                    };
+                })
+                .filter((element) => {
+                  return element !== undefined;
+                });
+            }
+          }
           break;
 
         default:
+          data.sources = ProxyVideo.map((e) => {
+            if (["360", "480", "720", "1080"].includes(e?.name))
+              return {
+                file: `//proxy.zembed.xyz/proxy/${e?.id}.mp4`,
+                label: `${e?.name}p`,
+                type: `video/mp4`,
+              };
+          }).filter((element) => {
+            return element !== undefined;
+          });
           break;
       }
-      data.sources = ProxyVideo.map((e) => {
-        if (["360", "480", "720", "1080"].includes(e?.name))
-          return {
-            file: `//proxy.zembed.xyz/proxy/${e?.id}.mp4`,
-            label: `${e?.name}p`,
-            type: `video/mp4`,
-          };
-      }).filter((element) => {
-        return element !== undefined;
-      });
-      /*data.sources = [
-        {
-          file: `//cdn.jwplayer.com/manifests/GQlE6Rqd.m3u8`,
-          type: `application/vnd.apple.mpegurl`,
-        },
-      ];*/
     } else if (row.backups.length && row.type == "upload") {
-      data.sources = row.backups
+      /*data.sources = row.backups
         .map((e) => {
           if (["360", "480", "720", "1080", "default"].includes(e?.quality))
             return {
@@ -98,9 +124,10 @@ module.exports = async (req, res) => {
         })
         .filter((element) => {
           return element !== undefined;
-        });
+        });*/
     }
     if (!data.sources) {
+      // error no sources
       return res.status(403).end();
     }
     data.title = row?.title;
@@ -112,6 +139,7 @@ module.exports = async (req, res) => {
     }*/
     return res.render("player", data);
   } catch (error) {
-    return res.status(403).end();
+    // error 500
+    return res.status(500).end();
   }
 };
