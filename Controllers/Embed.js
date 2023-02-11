@@ -28,6 +28,7 @@ module.exports = async (req, res) => {
           model: Files.Videos,
           as: "videos",
           attributes: ["quality", "storageId"],
+          where: { active: 1 },
           required: false,
         },
         {
@@ -44,23 +45,34 @@ module.exports = async (req, res) => {
         },
       ],
     });
+
     if (row.videos.length) {
-      data.sources = row.videos
-        .map((e) => {
-          if (["360", "480", "720", "1080", "default"].includes(e?.quality))
-            return {
-              file: `//${host}/${slug}/${e?.quality}-m3u8`,
-              type: `application/vnd.apple.mpegurl`,
-            };
-        })
-        .filter((element) => {
-          return element !== undefined;
-        });
+      data.sources = {
+        file: `//${host}/${slug}/master-m3u8/0`,
+        type: `application/vnd.apple.mpegurl`,
+      };
+      /*if (row.videos.length > 1) {
+        data.sources = {
+          file: `//${host}/${slug}/master-m3u8/0`,
+          type: `application/vnd.apple.mpegurl`,
+        };
+      } else {
+        data.sources = row.videos
+          .map((e) => {
+            if (["360", "480", "720", "1080", "default"].includes(e?.quality))
+              return {
+                file: `//${host}/${slug}/${e?.quality}-m3u8/_`,
+                type: `application/vnd.apple.mpegurl`,
+              };
+          })
+          .filter((element) => {
+            return element !== undefined;
+          });
+      }*/
     } else if (!row.videos.length && row.type == "gdrive") {
       let ProxyVideo = await Proxy.Cache(row);
       switch (ProxyVideo) {
         case "time_over" && "not_cache":
-          console.log("ProxyVideo", ProxyVideo);
           ProxyVideo = await Proxy.Google(row);
 
           if (ProxyVideo?.status == "ok") {
@@ -133,7 +145,9 @@ module.exports = async (req, res) => {
     data.title = row?.title;
     data.host = host;
     data.image =
-      row.duration > 0 ? `//${host}/thumb/${slug}-${row.duration / 2}.jpg` : "";
+      row.duration > 0
+        ? `//${host}/thumb/${slug}-${Math.floor(row.duration / 4)}.jpg`
+        : "";
     /*if (json) {
       return res.json(data);
     }*/

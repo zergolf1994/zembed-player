@@ -16,4 +16,5 @@ module.exports = {
     Backup: require("./_Get_Backup"),
     Storage: require("./_Get_Storage"),
   },
+  Cache: require("./_Cache"),
 };

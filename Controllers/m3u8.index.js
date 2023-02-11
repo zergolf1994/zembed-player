@@ -5,21 +5,21 @@ const request = require("request");
 const os = require("os");
 
 const { Files, Storage, GroupDomain } = require(`../Models`);
+const { Cache } = require(`../Utils`);
 
 module.exports = async (req, res) => {
   try {
     const { slug, quality } = req.params;
     if (!slug) return res.status(404).end();
-    let storageDir = path.join(global.dir, ".storage"),
-      storageFile = path.join(storageDir, `${slug}-${quality}`),
-      cacheDir = path.join(global.dir, ".cache", slug),
+    let cacheDir = path.join(global.dir, ".cache", slug),
       cacheFile = path.join(cacheDir, `${quality}`),
-      sv_ip;
+      data;
 
-    if (!fs.existsSync(storageFile)) {
-      if (!fs.existsSync(storageDir)) {
-        fs.mkdirSync(storageDir);
-      }
+    if (fs.existsSync(cacheFile)) {
+      console.log("cache")
+      let file_read = fs.readFileSync(cacheFile, "utf8");
+      data = JSON.parse(file_read);
+    } else {
       let file = await Files.Lists.findOne({
         where: {
           slug,
@@ -43,25 +43,14 @@ module.exports = async (req, res) => {
 
       let storageId = file?.videos[0]?.storageId;
 
-      let storage = await Storage.Lists.findOne({
-        where: {
-          id: storageId,
-        },
-        attributes: ["sv_ip"],
-      });
+      let sv_ip = await Cache.GetStorage({ storageId: storageId });
 
-      if (!storage) return res.status(404).end();
-
-      sv_ip = storage?.sv_ip;
-      fs.writeFileSync(storageFile, JSON.stringify(storage), "utf8");
-    } else {
-      let file_read = fs.readFileSync(storageFile, "utf8");
-      let storage = JSON.parse(file_read);
-      sv_ip = storage?.sv_ip;
+      const url = `http://${sv_ip}:8889/hls/${slug}/file_${quality}.mp4/index.m3u8`;
+      data = await getRequest(url);
+      if (data != undefined) {
+        fs.writeFileSync(cacheFile, JSON.stringify(data), "utf8");
+      }
     }
-
-    const url = `http://${sv_ip}:8889/hls/${slug}/file_${quality}.mp4/index.m3u8`;
-    let data = await getRequest(url);
 
     let domain = await GroupDomain.findOne({
       raw: true,
@@ -117,29 +106,33 @@ function getRequest(url) {
   try {
     return new Promise(function (resolve, reject) {
       request(url, function (err, response, body) {
-        const array = [],
-          html = body.split(/\r?\n/),
-          regex = /seg-(.*?)-/gm;
+        if (response.statusCode == 200) {
+          const array = [],
+            html = body.split(/\r?\n/),
+            regex = /seg-(.*?)-/gm;
 
-        html.forEach((k, i) => {
-          if (k.match(regex)) {
-            let nameitem = k.match(regex);
-            let numitem = nameitem
-              .toString()
-              .replace("seg-", "")
-              .replace("-", "")
-              .replace(".ts", "")
-              .replace("-v1", "")
-              .replace("-a1", "");
-            array.push(numitem);
-          } else {
-            if (k) {
-              array.push(k.trim());
+          html.forEach((k, i) => {
+            if (k.match(regex)) {
+              let nameitem = k.match(regex);
+              let numitem = nameitem
+                .toString()
+                .replace("seg-", "")
+                .replace("-", "")
+                .replace(".ts", "")
+                .replace("-v1", "")
+                .replace("-a1", "");
+              array.push(numitem);
+            } else {
+              if (k) {
+                array.push(k.trim());
+              }
             }
-          }
-        });
+          });
 
-        resolve(array);
+          resolve(array);
+        } else {
+          resolve();
+        }
       });
     });
   } catch (error) {
