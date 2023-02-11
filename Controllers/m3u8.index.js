@@ -16,7 +16,6 @@ module.exports = async (req, res) => {
       data;
 
     if (fs.existsSync(cacheFile)) {
-      console.log("cache")
       let file_read = fs.readFileSync(cacheFile, "utf8");
       data = JSON.parse(file_read);
     } else {
@@ -69,6 +68,7 @@ module.exports = async (req, res) => {
       quality,
     });
 
+    res.set("content-type", "application/x-mpegURL");
     return res.status(200).end(m3u8);
   } catch (error) {
     console.log(error);

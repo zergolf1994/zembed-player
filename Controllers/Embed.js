@@ -7,7 +7,7 @@ const { Op } = require("sequelize");
 module.exports = async (req, res) => {
   try {
     let { slug } = req.params;
-    let { json } = req.query;
+    let { q } = req.query;
     if (!slug) {
       // error no slug
       return res.status(404).end();
@@ -47,8 +47,30 @@ module.exports = async (req, res) => {
     });
 
     if (row.videos.length) {
+      if (row.videos.length > 1) {
+        let vdo = row.videos;
+        for (const key in vdo) {
+          if (vdo.hasOwnProperty.call(vdo, key)) {
+            const el = vdo[key];
+            if (el?.quality == "default") {
+              await Files.Videos.update(
+                { active: 0 },
+                {
+                  where: { quality: el?.quality, fileId: row?.id },
+                }
+              );
+            }
+          }
+        }
+      }
+      let link_m3u8;
+      if (["1080", "720", "480", "360"].includes(q)) {
+        link_m3u8 = `//${host}/${slug}/${q}-m3u8/_`;
+      } else {
+        link_m3u8 = `//${host}/${slug}/master-m3u8/0`;
+      }
       data.sources = {
-        file: `//${host}/${slug}/master-m3u8/0`,
+        file: link_m3u8,
         type: `application/vnd.apple.mpegurl`,
       };
       /*if (row.videos.length > 1) {
@@ -154,6 +176,7 @@ module.exports = async (req, res) => {
     return res.render("player", data);
   } catch (error) {
     // error 500
+    console.log(error);
     return res.status(500).end();
   }
 };

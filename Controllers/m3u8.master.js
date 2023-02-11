@@ -31,12 +31,11 @@ module.exports = async (req, res) => {
     });
 
     let video_lists = file?.videos;
-    let quality_array = ["#EXTM3U"];
+    let quality_array = ["#EXTM3U","#EXT-X-VERSION:5","#EXT-X-INDEPENDENT-SEGMENTS"];
     for (const key in video_lists) {
       if (video_lists.hasOwnProperty.call(video_lists, key)) {
         const video = video_lists[key];
         let quality = video?.quality;
-
         let cacheDir = path.join(global.dir, ".cache", slug),
           cacheFile = path.join(cacheDir, `master-${quality}`);
         if (!fs.existsSync(cacheFile)) {
@@ -63,8 +62,8 @@ module.exports = async (req, res) => {
         }
       }
     }
-    if (quality_array.length <= 1) return res.status(404).end();
-
+    if (quality_array.length <= 3) return res.status(404).end();
+    res.set("content-type", "application/x-mpegURL");
     return res.status(200).end(quality_array.join(os.EOL));
   } catch (error) {
     console.log(error);
