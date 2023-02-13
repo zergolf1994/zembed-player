@@ -62,11 +62,15 @@ module.exports = async (req, res) => {
           buffers.push(chunk);
         })
         .on("end", function () {
-          if (!fs.existsSync(cacheDir)) {
-            fs.mkdirSync(cacheDir, { recursive: true });
-          }
-          if (!fs.existsSync(cacheFile)) {
-            fs.writeFileSync(cacheFile, Buffer.concat(buffers), "utf8");
+          if (res?.statusCode == 200) {
+            if (length) {
+              if (!fs.existsSync(cacheDir)) {
+                fs.mkdirSync(cacheDir, { recursive: true });
+              }
+              if (!fs.existsSync(cacheFile)) {
+                fs.writeFileSync(cacheFile, Buffer.concat(buffers), "utf8");
+              }
+            }
           }
         })
         .pipe(res);
@@ -76,3 +80,17 @@ module.exports = async (req, res) => {
     return res.status(403).end();
   }
 };
+
+function getRes(url) {
+  try {
+    return new Promise((resolve, reject) => {
+      request({ url }, (err, resp, body) => {
+        if (!err) reject();
+        resolve(resp);
+      });
+    });
+  } catch (error) {
+    console.error(error);
+    return;
+  }
+}
