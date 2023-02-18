@@ -19,22 +19,13 @@ module.exports = async (req, res) => {
     let data = {
       slug,
     };
-
     let row = await Files.Lists.findOne({
-      attributes: ["id", "uid", "title", "type", "source", "duration"],
       where,
       include: [
         {
-          model: Files.Videos,
-          as: "videos",
-          attributes: ["quality", "storageId"],
+          model: Files.Datas,
+          as: "datas",
           where: { active: 1 },
-          required: false,
-        },
-        {
-          model: Files.Backups,
-          as: "backups",
-          attributes: ["type", "quality", "source"],
           required: false,
         },
         {
@@ -45,6 +36,34 @@ module.exports = async (req, res) => {
         },
       ],
     });
+
+    let vdo_hls = row?.datas.map((r) => {
+      return r?.type == "video" && r;
+    });
+    if (vdo_hls.length) {
+      let link_m3u8;
+      if (["1080", "720", "480", "360"].includes(q)) {
+        link_m3u8 = `//${host}/${slug}/${q}-m3u8/_`;
+      } else {
+        link_m3u8 = `//${host}/${slug}/master-m3u8/0`;
+      }
+      data.sources = {
+        file: link_m3u8,
+        type: `application/vnd.apple.mpegurl`,
+      };
+    }
+    if (!data.sources) {
+      // error no sources
+      return res.status(403).end();
+    }
+    data.title = row?.title;
+    data.host = host;
+    data.image =
+      row.duration > 0
+        ? `//${host}/thumb/${slug}-${Math.floor(row.duration / 4)}.jpg`
+        : "";
+    return res.render("player", data);
+    return res.json(vdo_hls);
 
     if (row.videos.length) {
       if (row.videos.length > 1) {
@@ -73,26 +92,8 @@ module.exports = async (req, res) => {
         file: link_m3u8,
         type: `application/vnd.apple.mpegurl`,
       };
-      /*if (row.videos.length > 1) {
-        data.sources = {
-          file: `//${host}/${slug}/master-m3u8/0`,
-          type: `application/vnd.apple.mpegurl`,
-        };
-      } else {
-        data.sources = row.videos
-          .map((e) => {
-            if (["360", "480", "720", "1080", "default"].includes(e?.quality))
-              return {
-                file: `//${host}/${slug}/${e?.quality}-m3u8/_`,
-                type: `application/vnd.apple.mpegurl`,
-              };
-          })
-          .filter((element) => {
-            return element !== undefined;
-          });
-      }*/
     } else if (!row.videos.length && row.type == "gdrive") {
-      let ProxyVideo = await Proxy.Cache(row);
+      /*let ProxyVideo = await Proxy.Cache(row);
       switch (ProxyVideo) {
         case "time_over" && "not_cache":
           ProxyVideo = await Proxy.Google(row);
@@ -142,23 +143,7 @@ module.exports = async (req, res) => {
             return element !== undefined;
           });
           break;
-      }
-    } else if (row.backups.length && row.type == "upload") {
-      /*data.sources = row.backups
-        .map((e) => {
-          if (["360", "480", "720", "1080", "default"].includes(e?.quality))
-            return {
-              file: `//backup.zembed.xyz/${e?.source.replace(
-                "/home/public/",
-                ""
-              )}`,
-              label: `${e?.name}p`,
-              type: `video/mp4`,
-            };
-        })
-        .filter((element) => {
-          return element !== undefined;
-        });*/
+      }*/
     }
     if (!data.sources) {
       // error no sources

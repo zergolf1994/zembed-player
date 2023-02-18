@@ -4,15 +4,15 @@ const fs = require("fs-extra");
 const request = require("request");
 const os = require("os");
 
-const { Files, Storage, GroupDomain } = require(`../Models`);
+const { Files, Storage, Groupdomain } = require(`../Models`);
 const { Cache } = require(`../Utils`);
 
 module.exports = async (req, res) => {
   try {
     const { slug, quality } = req.params;
     if (!slug) return res.status(404).end();
-    let cacheDir = path.join(global.dir, ".cache", slug),
-      cacheFile = path.join(cacheDir, `${quality}`),
+    let cacheDir = path.join(global.dir, ".cache", "m3u8", "index"),
+      cacheFile = path.join(cacheDir, `${slug}-${quality}`),
       data;
 
     if (fs.existsSync(cacheFile)) {
@@ -26,12 +26,12 @@ module.exports = async (req, res) => {
         attributes: ["id"],
         include: [
           {
-            model: Files.Videos,
-            as: "videos",
-            attributes: ["storageId"],
+            model: Files.Datas,
+            as: "datas",
             where: {
-              quality,
               active: 1,
+              type: "video",
+              name: quality,
             },
             required: true,
           },
@@ -40,18 +40,23 @@ module.exports = async (req, res) => {
 
       if (!file) return res.status(404).end();
 
-      let storageId = file?.videos[0]?.storageId;
+      const video = file?.datas[0];
+      let storageId = video?.storageId;
+      let file_name = video?.value;
 
       let sv_ip = await Cache.GetStorage({ storageId: storageId });
 
-      const url = `http://${sv_ip}:8889/hls/${slug}/file_${quality}.mp4/index.m3u8`;
+      const url = `http://${sv_ip}:8889/hls/${slug}/${file_name}/index.m3u8`;
       data = await getRequest(url);
       if (data != undefined) {
+        if (!fs.existsSync(cacheDir)) {
+          fs.mkdirSync(cacheDir, { recursive: true });
+        }
         fs.writeFileSync(cacheFile, JSON.stringify(data), "utf8");
       }
     }
 
-    let domain = await GroupDomain.findOne({
+    let domain = await Groupdomain.findOne({
       raw: true,
       where: {
         type: "cloudflare",

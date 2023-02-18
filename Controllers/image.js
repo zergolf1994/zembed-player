@@ -9,8 +9,8 @@ module.exports = async (req, res) => {
   try {
     const { slug, sec } = req.params;
     const ext = req.params[0];
-    let cacheDir = path.join(global.dir, ".cache", slug),
-      cacheFile = path.join(cacheDir, `${slug}-${sec}-image`),
+    let cacheDir = path.join(global.dir, ".cache", "poster"),
+      cacheFile = path.join(cacheDir, `${slug}-${sec}`),
       sv_ip,
       quality;
 
@@ -18,7 +18,6 @@ module.exports = async (req, res) => {
       let cache = fs.readFileSync(cacheFile);
       res.set("Content-Type", ext == "html" ? "text/html" : `image/${ext}`);
       res.set("cache-control", "public, max-age=31536000");
-      res.set("S-Cache", "HIT");
       return res.status(200).end(cache);
     } else {
       let file = await Files.Lists.findOne({
@@ -28,24 +27,25 @@ module.exports = async (req, res) => {
         attributes: ["id"],
         include: [
           {
-            model: Files.Videos,
-            as: "videos",
-            attributes: ["storageId", "quality"],
-            where: {
-              active: 1,
-            },
-            required: true,
+            model: Files.Datas,
+            as: "datas",
+            where: { active: 1 },
+            required: false,
           },
         ],
       });
 
       if (!file) return res.status(404).end();
 
-      let storageId = file?.videos[0]?.storageId;
-      quality = file?.videos[0]?.quality;
+      let vdo_hls = file?.datas.map((r) => {
+        return r?.type == "video" && r;
+      });
+
+      let storageId = vdo_hls[0]?.storageId;
+      let file_name = vdo_hls[0]?.value;
       sv_ip = await Cache.GetStorage({ storageId: storageId });
 
-      const url = `http://${sv_ip}:8889/thumb/${slug}/file_${quality}.mp4/thumb-${
+      const url = `http://${sv_ip}:8889/thumb/${slug}/${file_name}/thumb-${
         sec * 1000
       }-w400.jpg`;
 
@@ -76,21 +76,6 @@ module.exports = async (req, res) => {
         .pipe(res);
     }
   } catch (error) {
-    console.log(error);
     return res.status(403).end();
   }
 };
-
-function getRes(url) {
-  try {
-    return new Promise((resolve, reject) => {
-      request({ url }, (err, resp, body) => {
-        if (!err) reject();
-        resolve(resp);
-      });
-    });
-  } catch (error) {
-    console.error(error);
-    return;
-  }
-}

@@ -4,9 +4,10 @@ const fs = require("fs-extra");
 const request = require("request");
 const os = require("os");
 
-const { Files, Storage, GroupDomain } = require(`../Models`);
+const { Files, Storages, GroupDomain } = require(`../Models`);
 
 exports.GetStorage = async ({ storageId }) => {
+    
   if (!storageId) return;
   let storageDir = path.join(global.dir, ".storage"),
     storageFile = path.join(storageDir, `storage-${storageId}`);
@@ -16,7 +17,7 @@ exports.GetStorage = async ({ storageId }) => {
         if (!fs.existsSync(storageDir)) {
           fs.mkdirSync(storageDir);
         }
-        let storage = await Storage.Lists.findOne({
+        let storage = await Storages.Lists.findOne({
           where: {
             id: storageId,
           },

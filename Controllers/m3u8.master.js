@@ -19,9 +19,8 @@ module.exports = async (req, res) => {
       attributes: ["id"],
       include: [
         {
-          model: Files.Videos,
-          as: "videos",
-          attributes: ["storageId", "quality"],
+          model: Files.Datas,
+          as: "datas",
           where: {
             active: 1,
           },
@@ -29,21 +28,33 @@ module.exports = async (req, res) => {
         },
       ],
     });
+    if (!file) return res.status(404).end();
 
-    let video_lists = file?.videos;
-    let quality_array = ["#EXTM3U","#EXT-X-VERSION:5","#EXT-X-INDEPENDENT-SEGMENTS"];
-    for (const key in video_lists) {
-      if (video_lists.hasOwnProperty.call(video_lists, key)) {
-        const video = video_lists[key];
-        let quality = video?.quality;
-        let cacheDir = path.join(global.dir, ".cache", slug),
-          cacheFile = path.join(cacheDir, `master-${quality}`);
+    let vdo_hls = file?.datas.map((r) => {
+      return r?.type == "video" && r;
+    });
+
+    let quality_array = [
+      "#EXTM3U",
+      "#EXT-X-VERSION:5",
+      "#EXT-X-INDEPENDENT-SEGMENTS",
+    ];
+    for (const key in vdo_hls) {
+      if (vdo_hls.hasOwnProperty.call(vdo_hls, key)) {
+        const video = vdo_hls[key];
+        let storageId = vdo_hls[key]?.storageId;
+        let quality = vdo_hls[key]?.name;
+        let file_name = vdo_hls[key]?.value;
+
+        let cacheDir = path.join(global.dir, ".cache", "m3u8", "master"),
+          cacheFile = path.join(cacheDir, `${slug}-${quality}`);
+
         if (!fs.existsSync(cacheFile)) {
           if (!fs.existsSync(cacheDir)) {
             fs.mkdirSync(cacheDir, { recursive: true });
           }
           let sv_ip = await Cache.GetStorage({ storageId: video?.storageId });
-          const url = `http://${sv_ip}:8889/hls/${slug}/file_${quality}.mp4/master.m3u8`;
+          const url = `http://${sv_ip}:8889/hls/${slug}/${file_name}/master.m3u8`;
           let data = await getRequest(url);
           if (data != undefined) {
             let getMaster = await M3U8Master({
@@ -76,7 +87,17 @@ function M3U8Master({ domain, data, slug, quality }) {
       const array = [];
       data.forEach((k, i) => {
         if (k.match(/EXT-X-STREAM-INF(.*?)-/gm)) {
-          array.push(k);
+          /*let check = k.split(","),
+            newArray = [];
+          check.forEach((a, ii) => {
+            if (a.match(/RESOLUTION=(.*?)-/gm)) {
+              array.push(`NAME="${quality}",${a}`);
+            } else {
+              newArray.push(a);
+            }
+          });
+          console.log(newArray.join());*/
+          array.push(`${k},NAME="${quality}p"`);
           array.push(`//${domain}/${slug}/${quality}-m3u8/_`);
         }
       });
