@@ -23,6 +23,7 @@ module.exports = async (req, res) => {
           as: "datas",
           where: {
             active: 1,
+            type: "video",
           },
           required: true,
         },

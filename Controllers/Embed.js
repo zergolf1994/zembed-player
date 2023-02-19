@@ -37,8 +37,11 @@ module.exports = async (req, res) => {
       ],
     });
 
-    let vdo_hls = row?.datas.map((r) => {
+    let vdo_hls = row?.datas.filter((r) => {
       return r?.type == "video" && r;
+    });
+    let thumbs_vtt = row?.datas.filter((r) => {
+      return r?.type == "thumbs" && r;
     });
     if (vdo_hls.length) {
       let link_m3u8;
@@ -56,108 +59,20 @@ module.exports = async (req, res) => {
       // error no sources
       return res.status(403).end();
     }
+    data.tracks = [];
+    if (thumbs_vtt.length) {
+      data.tracks.push({
+        file: `//${host}/thumbs/${slug}.vtt`,
+        kind: "thumbnails",
+      });
+    }
+
     data.title = row?.title;
     data.host = host;
     data.image =
       row.duration > 0
         ? `//${host}/thumb/${slug}-${Math.floor(row.duration / 4)}.jpg`
         : "";
-    return res.render("player", data);
-    return res.json(vdo_hls);
-
-    if (row.videos.length) {
-      if (row.videos.length > 1) {
-        let vdo = row.videos;
-        for (const key in vdo) {
-          if (vdo.hasOwnProperty.call(vdo, key)) {
-            const el = vdo[key];
-            if (el?.quality == "default") {
-              await Files.Videos.update(
-                { active: 0 },
-                {
-                  where: { quality: el?.quality, fileId: row?.id },
-                }
-              );
-            }
-          }
-        }
-      }
-      let link_m3u8;
-      if (["1080", "720", "480", "360"].includes(q)) {
-        link_m3u8 = `//${host}/${slug}/${q}-m3u8/_`;
-      } else {
-        link_m3u8 = `//${host}/${slug}/master-m3u8/0`;
-      }
-      data.sources = {
-        file: link_m3u8,
-        type: `application/vnd.apple.mpegurl`,
-      };
-    } else if (!row.videos.length && row.type == "gdrive") {
-      /*let ProxyVideo = await Proxy.Cache(row);
-      switch (ProxyVideo) {
-        case "time_over" && "not_cache":
-          ProxyVideo = await Proxy.Google(row);
-
-          if (ProxyVideo?.status == "ok") {
-            delete ProxyVideo.status;
-            delete ProxyVideo.title;
-            let bulkProxy = [],
-              source = [];
-            for (const key in ProxyVideo) {
-              if (ProxyVideo.hasOwnProperty.call(ProxyVideo, key)) {
-                const element = ProxyVideo[key];
-                bulkProxy.push({
-                  name: key,
-                  value: ProxyVideo[key],
-                  fileId: row?.id,
-                });
-              }
-            }
-            if (bulkProxy.length) {
-              let blukCreate = await ProxyCache.bulkCreate(bulkProxy);
-              data.sources = blukCreate
-                .map((e) => {
-                  if (["360", "480", "720", "1080"].includes(e?.name))
-                    return {
-                      file: `//proxy.zembed.xyz/proxy/${e?.id}.mp4`,
-                      label: `${e?.name}p`,
-                      type: `video/mp4`,
-                    };
-                })
-                .filter((element) => {
-                  return element !== undefined;
-                });
-            }
-          }
-          break;
-
-        default:
-          data.sources = ProxyVideo.map((e) => {
-            if (["360", "480", "720", "1080"].includes(e?.name))
-              return {
-                file: `//proxy.zembed.xyz/proxy/${e?.id}.mp4`,
-                label: `${e?.name}p`,
-                type: `video/mp4`,
-              };
-          }).filter((element) => {
-            return element !== undefined;
-          });
-          break;
-      }*/
-    }
-    if (!data.sources) {
-      // error no sources
-      return res.status(403).end();
-    }
-    data.title = row?.title;
-    data.host = host;
-    data.image =
-      row.duration > 0
-        ? `//${host}/thumb/${slug}-${Math.floor(row.duration / 4)}.jpg`
-        : "";
-    /*if (json) {
-      return res.json(data);
-    }*/
     return res.render("player", data);
   } catch (error) {
     // error 500
