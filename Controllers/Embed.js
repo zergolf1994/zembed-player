@@ -18,12 +18,12 @@ module.exports = async (req, res) => {
       return res.render("e_404", data);
     }
     let host = req.get("host");
-    let referer = req.get("referer");
-    let fetch_dast = req.get("sec-fetch-dest");
+    //let referer = req.get("referer");
+   // let fetch_dast = req.get("sec-fetch-dest");
 
-    if (fetch_dast != "iframe") {
+    /*if (fetch_dast != "iframe") {
       return res.render("e_404", data);
-    }
+    }*/
     let players = await Player.Lists.findOne({
       where: {
         domain: host,
@@ -53,7 +53,7 @@ module.exports = async (req, res) => {
         }
       }
     }
-    //console.log(data_player);
+    
 
     let row = await Files.Lists.findOne({
       where,
