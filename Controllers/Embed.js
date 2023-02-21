@@ -186,6 +186,12 @@ module.exports = async (req, res) => {
     }
     //console.log(data_player)
 
+    let viewedAt = new Date().toISOString();
+    let files_views = row?.views + 1;
+    await Files.Lists.update(
+      { views: files_views, viewedAt },
+      { where: { id: row?.id }, silent: true }
+    );
     return res.render("jwplayer", data);
   } catch (error) {
     // error 500
