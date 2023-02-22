@@ -10,5 +10,6 @@ module.exports = {
   Player: require("./_player"),
   Process: require("./_process"),
   ProxyCache: require("./_proxy"),
+  M3u8Cache: require("./_m3u8"),
   Settings: require("./_settings"),
 };

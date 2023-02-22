@@ -8,4 +8,5 @@ module.exports = {
   Proxy: require("./_Proxy"),
   getSets: require("./_Settings"),
   TimeSleep: require("./_TimeSleep"),
+  GDomain: require("./_GroupDomain"),
 };
