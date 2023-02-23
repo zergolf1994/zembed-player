@@ -88,17 +88,18 @@ function M3U8Master({ domain, data, slug, quality }) {
       const array = [];
       data.forEach((k, i) => {
         if (k.match(/EXT-X-STREAM-INF(.*?)-/gm)) {
-          /*let check = k.split(","),
+          let check = k.split(","),
             newArray = [];
           check.forEach((a, ii) => {
-            if (a.match(/RESOLUTION=(.*?)-/gm)) {
-              array.push(`NAME="${quality}",${a}`);
+            if (a.match(/RESOLUTION=(.*?)/gm)) {
+              const resol = /RESOLUTION=([\w\-]{1,200})x([\w\-]{1,200})$/i;
+              const match = a.match(resol)
+              newArray.push(`RESOLUTION=${match[1]}x${quality}`);
             } else {
               newArray.push(a);
             }
           });
-          console.log(newArray.join());*/
-          array.push(`${k},NAME="${quality}p"`);
+          array.push(newArray.join());
           array.push(`//${domain}/${slug}/${quality}-m3u8/_`);
         }
       });
@@ -112,7 +113,7 @@ function getRequest(url) {
   try {
     return new Promise(function (resolve, reject) {
       request(url, function (err, response, body) {
-        if (response.statusCode == 200) {
+        if (response?.statusCode == 200) {
           const array = [],
             html = body.split(/\r?\n/),
             regex = /seg-(.*?)-/gm;
