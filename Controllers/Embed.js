@@ -19,7 +19,7 @@ module.exports = async (req, res) => {
     }
     let host = req.get("host");
     //let referer = req.get("referer");
-   // let fetch_dast = req.get("sec-fetch-dest");
+    // let fetch_dast = req.get("sec-fetch-dest");
 
     /*if (fetch_dast != "iframe") {
       return res.render("e_404", data);
@@ -53,7 +53,6 @@ module.exports = async (req, res) => {
         }
       }
     }
-    
 
     let row = await Files.Lists.findOne({
       where,
@@ -76,6 +75,27 @@ module.exports = async (req, res) => {
     if (!row) {
       return res.render("e_404", data);
     }
+    let player_host = row?.sets.filter((r) => {
+      return r?.name == "player_host";
+    });
+
+    if (!player_host.length && host != "localhost") {
+      //create
+      await Files.Sets.create({
+        name: "player_host",
+        value: host,
+        fileId: row?.id,
+      });
+    } else if (player_host[0]?.value != host && host != "localhost") {
+      //update
+      await Files.Sets.update(
+        { value: host },
+        {
+          where: { name: "player_host", fileId: row?.id },
+        }
+      );
+    }
+
     data.title = row?.title;
     data.host = host;
     data.jwplayer = {};
@@ -121,10 +141,11 @@ module.exports = async (req, res) => {
     data.jwplayer.key = "W7zSm81+mmIsg7F+fyHRKhF3ggLkTqtGMhvI92kbqf/ysE99"; //ITWMv7t88JGzI0xPwW8I0+LveiXX9SWbfdmt0ArUSyc=
     data.jwplayer.width = "100%";
     data.jwplayer.height = "100%";
-    data.jwplayer.preload = "auto";
+    data.jwplayer.preload = "metadata";
     data.jwplayer.primary = "html5";
     data.jwplayer.hlshtml = "true";
     data.jwplayer.controls = "true";
+    data.jwplayer.pipIcon = "enabled";
     if (data_player?.poster_url_image != "") {
       data.jwplayer.image = data_player?.poster_url_image;
     } else {
@@ -184,6 +205,10 @@ module.exports = async (req, res) => {
         ],
       };
     }
+    data.jwplayer.sharing = {
+      sites: ["reddit", "facebook", "twitter"]
+    };
+    
     //console.log(data_player)
 
     let viewedAt = new Date().toISOString();

@@ -6,15 +6,18 @@ const os = require("os");
 const { Sequelize, Op } = require("sequelize");
 
 const { Files, Storage, Groupdomain, M3u8Cache } = require(`../Models`);
-const { Cache, GDomain } = require(`../Utils`);
+const { Cache, GDomain, getSets } = require(`../Utils`);
 
 module.exports = async (req, res) => {
   try {
     const { slug, quality } = req.params;
     if (!slug) return res.status(404).end();
+    let Sets = await getSets();
     let cacheDir = path.join(global.dir, ".cache", "m3u8", "index"),
       cacheFile = path.join(cacheDir, `${slug}-${quality}`),
-      data;
+      data,
+      refDomain = Sets?.domain_dash_user,
+      redDomain = Sets?.domain_player;
 
     if (fs.existsSync(cacheFile)) {
       let file_read = fs.readFileSync(cacheFile, "utf8");
@@ -130,6 +133,8 @@ module.exports = async (req, res) => {
       data: JSON.parse(data?.value),
       slug,
       quality,
+      refDomain,
+      redDomain,
     });
 
     res.set("content-type", "application/x-mpegURL");
@@ -139,7 +144,7 @@ module.exports = async (req, res) => {
     return res.status(403).end();
   }
 };
-function M3U8({ domain, data, slug, quality }) {
+function M3U8({ domain, data, slug, quality, refDomain, redDomain }) {
   try {
     return new Promise(function (resolve, reject) {
       const array = [];
@@ -152,7 +157,17 @@ function M3U8({ domain, data, slug, quality }) {
             array.push(k);
           }
         } else {
-          array.push(`//${domain[start]}/${slug}/${quality}-${k}.png`);
+          array.push(`//${domain[start]}/${slug}/${quality}-${k}.html`);
+          /*if (redDomain) {
+            let url = new Buffer.from(
+                `https://${domain[start]}/${slug}/${quality}-${k}.html`
+              ).toString("base64"),
+              ref = new Buffer.from(refDomain).toString("base64");
+            array.push(`//${redDomain}/red/${url}/${ref}`);
+          } else {
+            array.push(`//${domain[start]}/${slug}/${quality}-${k}.html`);
+          }*/
+
           if (start == end) {
             start = 0;
           } else {
