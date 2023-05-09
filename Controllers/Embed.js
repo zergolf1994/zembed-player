@@ -149,10 +149,10 @@ module.exports = async (req, res) => {
     if (data_player?.poster_url_image != "") {
       data.jwplayer.image = data_player?.poster_url_image;
     } else {
-      data.jwplayer.image =
+      /*data.jwplayer.image =
         row.duration > 0
           ? `//${host}/thumb/${slug}-${Math.floor(row.duration / 4)}.jpg`
-          : "";
+          : "";*/
     }
     if (data_player?.show_video_title == "1") {
       data.jwplayer.title = row?.title;

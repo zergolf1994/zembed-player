@@ -18,7 +18,8 @@ module.exports = async (req, res) => {
     if (!play) return res.json({ status: false, msg: "not_exists" });
     if (!play?.active) return res.json({ status: false, msg: "api_disable" });
     if (!play?.userId) return res.json({ status: false, msg: "demo_api" });
-    if (play?.domain != req.get('host')) return res.json({ status: false, msg: "domain_not_match" });
+    if (play?.domain != req.get("host"))
+      return res.json({ status: false, msg: "domain_not_match" });
 
     let allow = Allow.Files(source);
     if (!allow?.status)
@@ -53,10 +54,32 @@ module.exports = async (req, res) => {
       if (allow?.type == "gdrive") {
         let drive_info = await Google.Info(data);
         if (drive_info?.error) {
-          return res.json({
+          // with source
+
+          let gSource = await Google.Source(data);
+          if (!gSource?.status || gSource?.error_code) {
+            if (gSource?.error_code) {
+              let e_code = gSource?.error_code || 333;
+              return res.json({
+                status: false,
+                msg: "video_error",
+                e_code,
+              });
+            } else {
+              return res.json({
+                status: false,
+                msg: drive_info.error.message,
+              });
+            }
+          } else {
+            if (!data?.title) {
+              data.title = gSource?.title;
+            }
+          }
+          /*return res.json({
             status: false,
             msg: drive_info.error.message,
-          });
+          });*/
         }
         if (drive_info?.fileSize) {
           data.size = drive_info?.fileSize;

@@ -139,9 +139,10 @@ exports.Source = async (file) => {
             data.cookie = JSON.stringify(response.headers["set-cookie"]);
             data.timestamp = Date.now();
           } else {
+            console.log(`error`,file?.source);
             data.error_code = parsed.errorcode;
             data.error_text = parsed.reason;
-            console.log(parsed);
+            //console.log(parsed);
           }
         } else {
           data.status = false;
