@@ -110,9 +110,9 @@ exports.Source = async (file) => {
     if (token) {
       headers.Authorization = `${token?.token_type} ${token?.access_token}`;
     }
-    if (process.env.PROXY) {
+    /*if (process.env.PROXY) {
       proxy = `${process.env.PROXY}`;
-    }
+    }*/
 
     return new Promise(function (resolve, reject) {
       request({ url, proxy, headers }, function (error, response, body) {
