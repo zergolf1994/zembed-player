@@ -52,7 +52,10 @@ module.exports = async (req, res) => {
         slug: await Generate.file_slug(),
       };
       if (allow?.type == "gdrive") {
-        let drive_info = await Google.Info(data);
+        //let drive_info = await Google.Info(data);
+        let drive_info = {
+          error: true,
+        };
         if (drive_info?.error) {
           // with source
 

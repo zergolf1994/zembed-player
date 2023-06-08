@@ -139,7 +139,7 @@ exports.Source = async (file) => {
             data.cookie = JSON.stringify(response.headers["set-cookie"]);
             data.timestamp = Date.now();
           } else {
-            console.log(`error`,file?.source);
+            console.log(`error`, file?.source);
             data.error_code = parsed.errorcode;
             data.error_text = parsed.reason;
             //console.log(parsed);
@@ -173,7 +173,7 @@ exports.Info = async (file) => {
     }
     return new Promise(function (resolve, reject) {
       request({ url, proxy, headers }, function (error, response, body) {
-        resolve(JSON.parse(body));
+        resolve(JSON.parse(body) || { error: true });
       });
     });
   } catch (error) {
