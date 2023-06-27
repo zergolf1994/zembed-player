@@ -104,6 +104,7 @@ module.exports = async (req, res) => {
 
       let db_create = await Files.Lists.create(data);
       if (db_create?.id) {
+        console.log("create", data?.source);
         return res.json({
           status: "success",
           embed_url: `https://${play?.domain}/embed/${db_create?.slug}/`,
